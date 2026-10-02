@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import sqlite3
 
@@ -46,7 +46,10 @@ def get_product(product_id: int):
     if product:
         return product
 
-    return {"message": "Product not found"}
+    raise HTTPException(
+        status_code=404,
+        detail="Product not found"
+    )
 
 
 # GET - Product by Name
@@ -68,11 +71,14 @@ def get_product_by_name(product_name: str):
     if product:
         return product
 
-    return {"message": "Product not found"}
+    raise HTTPException(
+        status_code=404,
+        detail="Product not found"
+    )
 
 
 # POST - Create Product
-@app.post("/products")
+@app.post("/products", status_code=201)
 def create_product(product: Product):
 
     connection = sqlite3.connect("database.db")
@@ -84,6 +90,7 @@ def create_product(product: Product):
     )
 
     connection.commit()
+
     connection.close()
 
     return {
@@ -109,7 +116,11 @@ def update_product(product_id: int, product: Product):
 
     if cursor.rowcount == 0:
         connection.close()
-        return {"message": "Product not found"}
+
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found"
+        )
 
     connection.close()
 
@@ -137,7 +148,11 @@ def delete_product(product_id: int):
 
     if cursor.rowcount == 0:
         connection.close()
-        return {"message": "Product not found"}
+
+        raise HTTPException(
+            status_code=404,
+            detail="Product not found"
+        )
 
     connection.close()
 
