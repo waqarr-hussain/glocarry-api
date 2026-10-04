@@ -1,36 +1,53 @@
 from fastapi import APIRouter, HTTPException
-from schemas import Product
+
 from database import get_connection
+from schemas import ProductCreate, ProductResponse
 
 
+# Products ke liye router create kar rahe hain
 router = APIRouter(
     prefix="/products",
     tags=["Products"]
 )
 
 
-# GET - All Products
-@router.get("/", status_code=200)
+# --------------------------------
+# GET ALL PRODUCTS
+# --------------------------------
+
+@router.get("/", response_model=list[ProductResponse])
 def get_products():
+
     connection = get_connection()
     cursor = connection.cursor()
 
-    cursor.execute("SELECT * FROM products")
+    cursor.execute("SELECT id, name, price FROM products")
     products = cursor.fetchall()
 
     connection.close()
 
-    return products
+    return [
+        {
+            "id": product[0],
+            "name": product[1],
+            "price": product[2]
+        }
+        for product in products
+    ]
 
 
-# GET - Product by ID
-@router.get("/{product_id}", status_code=200)
+# --------------------------------
+# GET PRODUCT BY ID
+# --------------------------------
+
+@router.get("/{product_id}", response_model=ProductResponse)
 def get_product(product_id: int):
+
     connection = get_connection()
     cursor = connection.cursor()
 
     cursor.execute(
-        "SELECT * FROM products WHERE id = ?",
+        "SELECT id, name, price FROM products WHERE id = ?",
         (product_id,)
     )
 
@@ -39,7 +56,11 @@ def get_product(product_id: int):
     connection.close()
 
     if product:
-        return product
+        return {
+            "id": product[0],
+            "name": product[1],
+            "price": product[2]
+        }
 
     raise HTTPException(
         status_code=404,
@@ -47,14 +68,18 @@ def get_product(product_id: int):
     )
 
 
-# GET - Product by Name
-@router.get("/name/{product_name}", status_code=200)
+# --------------------------------
+# GET PRODUCT BY NAME
+# --------------------------------
+
+@router.get("/name/{product_name}", response_model=ProductResponse)
 def get_product_by_name(product_name: str):
+
     connection = get_connection()
     cursor = connection.cursor()
 
     cursor.execute(
-        "SELECT * FROM products WHERE name = ?",
+        "SELECT id, name, price FROM products WHERE name = ?",
         (product_name,)
     )
 
@@ -63,7 +88,11 @@ def get_product_by_name(product_name: str):
     connection.close()
 
     if product:
-        return product
+        return {
+            "id": product[0],
+            "name": product[1],
+            "price": product[2]
+        }
 
     raise HTTPException(
         status_code=404,
@@ -71,9 +100,13 @@ def get_product_by_name(product_name: str):
     )
 
 
-# POST - Create Product
-@router.post("/", status_code=201)
-def create_product(product: Product):
+# --------------------------------
+# CREATE PRODUCT
+# --------------------------------
+
+@router.post("/", response_model=ProductResponse, status_code=201)
+def create_product(product: ProductCreate):
+
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -83,18 +116,28 @@ def create_product(product: Product):
     )
 
     connection.commit()
+
+    product_id = cursor.lastrowid
+
     connection.close()
 
     return {
-        "message": "Product created successfully",
+        "id": product_id,
         "name": product.name,
         "price": product.price
     }
 
 
-# PUT - Update Product
-@router.put("/{product_id}", status_code=200)
-def update_product(product_id: int, product: Product):
+# --------------------------------
+# UPDATE PRODUCT
+# --------------------------------
+
+@router.put("/{product_id}", response_model=ProductResponse)
+def update_product(
+    product_id: int,
+    product: ProductCreate
+):
+
     connection = get_connection()
     cursor = connection.cursor()
 
@@ -116,16 +159,19 @@ def update_product(product_id: int, product: Product):
     connection.close()
 
     return {
-        "message": "Product updated successfully",
         "id": product_id,
         "name": product.name,
         "price": product.price
     }
 
 
-# DELETE - Delete Product
-@router.delete("/{product_id}", status_code=200)
+# --------------------------------
+# DELETE PRODUCT
+# --------------------------------
+
+@router.delete("/{product_id}")
 def delete_product(product_id: int):
+
     connection = get_connection()
     cursor = connection.cursor()
 

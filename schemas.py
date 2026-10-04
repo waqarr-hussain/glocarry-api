@@ -1,7 +1,12 @@
 from pydantic import BaseModel
 
 
-# Product ke input data ke rules
-class Product(BaseModel):
+class ProductCreate(BaseModel):
+    name: str
+    price: int
+
+
+class ProductResponse(BaseModel):
+    id: int
     name: str
     price: int
